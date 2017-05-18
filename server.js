@@ -6,6 +6,7 @@ var mongoose    = require('mongoose');
 var passport	= require('passport');
 var config      = require('./config/database'); // get db config file
 var User        = require('./app/models/user'); // get the mongoose model
+var Message     = require('./app/models/message'); // get the mongoose model
 var port        = process.env.PORT || 8080;
 var jwt         = require('jwt-simple');
 
@@ -35,7 +36,42 @@ require('./config/passport')(passport);
 
 // bundle our routes
 var apiRoutes = express.Router();
+apiRoutes.post('/test', passport.authenticate('jwt', { session: false}), function(req, res){
+  var token = getToken(req.headers);
+  var name = "";
+  if (token) {
+    var decoded = jwt.decode(token, config.secret);
+    User.findOne({
+      name: decoded.name
+    }, function(err, user) {
+      console.log(name);
+        if (err) throw err;
 
+        if (!user) {
+          return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
+        } else {
+          var test = new Message ({
+            dest: decoded.name,
+            exp: req.body.exp,
+            message: req.body.message
+          });
+
+          test.save(function(err){
+            if (err) throw err;
+  
+            else{
+              res.json({success: true, msg: 'Message envoyé!'});
+            };
+          })
+
+        }
+    });
+  } else {
+    return res.status(403).send({success: false, msg: 'No token provided.'});
+  }
+
+
+});
 // create a new user account (POST http://localhost:8080/api/signup)
 apiRoutes.post('/signup', function(req, res) {
   newUser(req,res)
@@ -43,19 +79,21 @@ apiRoutes.post('/signup', function(req, res) {
 function newUser(req,res){
   var ran = random(1, 10000);
   nameRan = 'bob'+ran;
+  publickey= req.body.publickey
   if (!req.body.password) {
     res.json({nameRan:nameRan, success: false, msg: 'Please pass name and password.'});
   } else {
     var newUser = new User({
       name: nameRan,
-      password: req.body.password
+      password: req.body.password,
+      publickey: req.body.publickey
     });
     // save the user
     newUser.save(function(err) {
       if (err) {
         newUser(req,res)
       }
-      res.json({name: nameRan, success: true, msg: 'Successful created new user.'});
+      res.json({publickey: publickey, name: nameRan, success: true, msg: 'Successful created new user.'});
     });
   }
 }
@@ -107,6 +145,8 @@ apiRoutes.get('/memberinfo', passport.authenticate('jwt', { session: false}), fu
     return res.status(403).send({success: false, msg: 'No token provided.'});
   }
 });
+
+
 function random (low, high) {
     return Math.floor(Math.random() * (high - low + 1) + low);
 }
