@@ -36,11 +36,15 @@ require('./config/passport')(passport);
 
 // bundle our routes
 var apiRoutes = express.Router();
-apiRoutes.post('/test', passport.authenticate('jwt', { session: false}), function(req, res){
+apiRoutes.post('/message/send', passport.authenticate('jwt', { session: false}), function(req, res){
+  console.log(req);
   var token = getToken(req.headers);
+  console.log(token);
   var name = "";
   if (token) {
+    console.log(token);
     var decoded = jwt.decode(token, config.secret);
+    console.log(decoded);
     User.findOne({
       name: decoded.name
     }, function(err, user) {
@@ -51,14 +55,14 @@ apiRoutes.post('/test', passport.authenticate('jwt', { session: false}), functio
           return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
         } else {
           var test = new Message ({
-            dest: decoded.name,
-            exp: req.body.exp,
+            dest: req.body.dest,
+            exp: decoded.name,
             message: req.body.message
           });
 
           test.save(function(err){
             if (err) throw err;
-  
+
             else{
               res.json({success: true, msg: 'Message envoyé!'});
             };
