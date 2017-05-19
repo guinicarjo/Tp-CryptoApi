@@ -22,12 +22,12 @@ app.use(passport.initialize());
 
 // demo Route (GET http://localhost:8080)
 app.get('/', function(req, res) {
-  res.send('Hello! The API is at http://localhost:' + port + '/api');
+  res.send('Hello! lien de l api http://localhost:' + port + '/api');
 });
 
 // Start the server
 app.listen(port);
-console.log('There will be dragons: http://localhost:' + port);
+console.log('Vous etes connecter a l api: http://localhost:' + port);
 // connect to database
 mongoose.connect(config.database);
 
@@ -37,18 +37,18 @@ require('./config/passport')(passport);
 // bundle our routes
 var apiRoutes = express.Router();
 apiRoutes.post('/message/send', passport.authenticate('jwt', { session: false}), function(req, res){
-  console.log(req);
+
   var token = getToken(req.headers);
-  console.log(token);
+
   var name = "";
   if (token) {
-    console.log(token);
+
     var decoded = jwt.decode(token, config.secret);
-    console.log(decoded);
+
     User.findOne({
       name: decoded.name
     }, function(err, user) {
-      console.log(name);
+
         if (err) throw err;
 
         if (!user) {
@@ -130,19 +130,19 @@ apiRoutes.post('/authenticate', function(req, res) {
   });
 });
 
-apiRoutes.get('/memberinfo', passport.authenticate('jwt', { session: false}), function(req, res) {
+apiRoutes.post('/publickey', passport.authenticate('jwt', { session: false}), function(req, res) {
   var token = getToken(req.headers);
   if (token) {
     var decoded = jwt.decode(token, config.secret);
     User.findOne({
-      name: decoded.name
+      name: req.body.name
     }, function(err, user) {
         if (err) throw err;
 
         if (!user) {
           return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
         } else {
-          res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
+          res.json({publickey: user.publickey, success: true, msg: 'Welcome in the member area ' + user.name + '!'});
         }
     });
   } else {
