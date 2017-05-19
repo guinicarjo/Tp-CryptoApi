@@ -76,6 +76,44 @@ apiRoutes.post('/message/send', passport.authenticate('jwt', { session: false}),
 
 
 });
+
+apiRoutes.post('/message/receive', passport.authenticate('jwt', { session: false}), function(req, res){
+
+  var token = getToken(req.headers);
+
+  var name = "";
+  if (token) {
+
+    var decoded = jwt.decode(token, config.secret);
+    name=decoded.name
+    User.findOne({
+      name: decoded.name
+    }, function(err, user) {
+
+        if (err) throw err;
+
+        if (!user) {
+          return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
+        } else {
+
+          console.log(name);
+          Message.findOne({dest: name },function(err,msg){
+            console.log(err);
+            if (err) throw err;
+
+            else{
+              res.json({success: true, message: msg.message});
+            };
+          })
+
+        }
+    });
+  } else {
+    return res.status(403).send({success: false, msg: 'No token provided.'});
+  }
+
+
+});
 // create a new user account (POST http://localhost:8080/api/signup)
 apiRoutes.post('/signup', function(req, res) {
   newUser(req,res)
@@ -121,7 +159,7 @@ apiRoutes.post('/authenticate', function(req, res) {
           // if user is found and password is right create a token
           var token = jwt.encode(user, config.secret);
           // return the information including token as JSON
-          res.json({success: true, token: 'JWT ' + token});
+          res.json({success: true,token: 'JWT ' + token});
         } else {
           res.send({success: false, msg: 'Authentication failed. Wrong password.'});
         }
